@@ -170,6 +170,66 @@ CIntersection CQuadrique::Intersection( const CRayon& Rayon )
 	// S'il y a collision, ajuster les variables suivantes de la structure intersection :
 	// Normale, Surface intersectée et la distance
 
+	REAL A = m_Quadratique.x;
+	REAL E = m_Quadratique.y;
+	REAL H = m_Quadratique.z;
+	REAL D = m_Lineaire.x;
+	REAL G = m_Lineaire.y;
+	REAL I = m_Lineaire.z;
+	REAL B = m_Mixte.x;
+	REAL C = m_Mixte.y;
+	REAL F = m_Mixte.z;
+	REAL J = m_Cst;
+
+	CVecteur3 Rd = CVecteur3::Normaliser(Rayon.ObtenirDirection());
+
+	REAL Xd = Rd.x;
+	REAL Yd = Rd.y;
+	REAL Zd = Rd.z;
+
+	REAL X0 = Rayon.ObtenirOrigine().x;
+	REAL Y0 = Rayon.ObtenirOrigine().y;
+	REAL Z0 = Rayon.ObtenirOrigine().z;
+	
+	REAL Aq = Xd*(A*Xd + B*Yd + C*Zd) 
+			+ Yd*(E*Yd + F*Zd) 
+			+ H*Zd*Zd;
+	REAL Bq = 2.f*(Xd*(A*X0+B/2.f*Y0+C/2.f*Z0+D/2.f)
+			+ Yd*(B/2.f*X0+E*Y0+F/2.f*Z0+G/2.f)
+			+ Zd*(C/2.f*X0+F/2.f*Y0+H*Z0+I/2.f));
+	REAL Cq = X0*(A*X0+B*Y0+C*Z0+D)
+			+ Y0*(E*Y0+F*Z0+G)
+			+ Z0*(H*Z0+I)+J;
+
+	REAL t =0;
+	if (Aq != 0) {
+		REAL delta = Bq*Bq - 4 * Aq*Cq;
+		if (delta >= 0) {
+			t = Min((-Bq + sqrt(delta)) / (2 * Aq), (-Bq - sqrt(delta)) / (2 * Aq));
+		}
+	}else {
+		if (Bq!=0)
+		{
+			t = -Cq / Bq;
+		}
+	}
+
+	if (t > 0) {
+		CVecteur3 Pinters = CVecteur3(X0 + Xd*t, Y0 + Yd*t, Z0 + Zd*t);
+		REAL xn =2.f*(A*Pinters.x + B/2.f*Pinters.y + C/2.f*Pinters.z + D/2.f);
+		REAL yn =2.f*(B/2.f*Pinters.x + E*Pinters.y + F/2.f*Pinters.z + G/2.f);
+		REAL zn =2.f*(C/2.f*Pinters.x + F/2.f*Pinters.y + H*Pinters.z + I/2.f);
+		CVecteur3 normal = CVecteur3::Normaliser(CVecteur3(xn, yn, zn));
+		if (CVecteur3::ProdScal(normal, Rayon.ObtenirDirection())>0)
+		{
+			normal = -normal;
+		}
+		Result.AjusterSurface(this);
+		Result.AjusterNormale(normal);
+		Result.AjusterDistance(CVecteur3::Distance(Pinters, Rayon.ObtenirOrigine()));
+	}
+
+
 	return Result;
 }
 

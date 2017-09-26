@@ -624,7 +624,7 @@ void CScene::InitialiserCamera( void )
 ///////////////////////////////////////////////////////////////////////////////
 void CScene::LancerRayons( void )
 {
-	Initialiser();
+	/*Initialiser();
 
 	// À COMPLÉTER ...
 
@@ -653,12 +653,142 @@ void CScene::LancerRayons( void )
 	//      }
 	//  }
 
+	// Instanciation de l'objet Rayon
+	CRayon rayon;
+
+	// Calcul des constantes utiles au calcul de la coordonnée du pixel
+	REAL d = m_Camera.Focale;
+
+	REAL thetaVer = m_Camera.Angle / 2.f;
+	REAL hauteurPix = 2.f *d* tan(thetaVer);
+	REAL largeurPix = hauteurPix*(float)m_ResLargeur/(float)m_ResHauteur;
+	REAL thetaHor = atan(largeurPix/(2.f*d));
+
+	CVecteur3 forward = CVecteur3::Normaliser(m_Camera.PointVise - m_Camera.Position);
+	CVecteur3 up = CVecteur3::Normaliser(m_Camera.Up);
+	CVecteur3 right = CVecteur3::Normaliser(CVecteur3::ProdVect(forward, up));
+
+	CVecteur3 P0 = m_Camera.Position;
+	
+
+	CVecteur3 Phaut = P0 + d*forward + d*up* tan(thetaVer);
+	CVecteur3 Pbas = P0 + d *forward - d* up* tan(thetaVer);
+	CVecteur3 Pgauche = P0 + d*forward - d*right* tan(thetaHor);
+	CVecteur3 Pdroite = P0 + d *forward + d*right* tan(thetaHor);
+	
+
+	// POUR chaque position Py de pixel de la grille virtuelle
+	for (unsigned int j = 0; j < m_ResHauteur; j++)
+	{
+		// POUR chaque position Px de pixel de la grille virtuelle
+		for (unsigned int i = 0; i < m_ResLargeur; i++)
+		{
+			// Ajuster l’origine du rayon au centre de la caméra
+			rayon.AjusterOrigine(m_Camera.Position);
+
+			// Calculer la direction du rayon vers la coordonnée réelle du pixel ( Px,Py )
+			REAL Px = Pgauche.x + ((i+0.5) / (float)m_ResLargeur) * (Pdroite.x - Pgauche.x);
+			REAL Py = Pbas.y + ((j+0.5) / (float)m_ResHauteur) * (Phaut.y - Pbas.y);
+
+			// Instanciation du vecteur résultant
+			CVecteur3 V(Px, Py, d);
+			CVecteur3 rayonDir =V-rayon.ObtenirOrigine();
+
+			// Ajuster l'orientation du rayon ( utiliser la matrice Orientation de la camera qui est déjà calculé pour vous ) et le normaliser
+			rayon.AjusterDirection(CVecteur3::Normaliser(rayonDir * m_Camera.Orientation));
+
+			// Initialiser les autres caractéristiques du rayon à :
+			//      - Energie            = 1
+			//      - NbRebonds          = 0
+			//      - IndiceDeRefraction = 1
+			rayon.AjusterEnergie(1);
+			rayon.AjusterNbRebonds(0);
+			rayon.AjusterIndiceRefraction(1);
+
+			// Lancer le rayon pour obtenir la couleur du pixel avec la fonction
+			CCouleur couleur = CScene::ObtenirCouleur(rayon);
+
+			// Enregistrer les composantes R, G et B de la couleur du pixel dans la
+			//   structure linéaire m_PixelInfo de taille ResolutionX * ResolutionY * 3
+			unsigned int index = 3 * (i + j * m_ResLargeur);
+			m_InfoPixel[index + 0] = couleur.r;
+			m_InfoPixel[index + 1] = couleur.g;
+			m_InfoPixel[index + 2] = couleur.b;
+		}
+	}
+
+
 	// Créer une texture openGL
 	glGenTextures(1, &m_TextureScene);
 	glBindTexture(GL_TEXTURE_2D, m_TextureScene);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_ResLargeur, m_ResHauteur, 0, GL_RGB, GL_FLOAT, m_InfoPixel);
+*/
+Initialiser();
+
+// Instanciation de l'objet Rayon
+CRayon rayon;
+
+// Calcul des constantes utiles au calcul de la coordonnée du pixel
+REAL thetaY = m_Camera.Angle / 2.0;
+REAL thetaX = atan((m_ResLargeur / m_ResHauteur) * tan(thetaY));
+
+CVecteur3 P0 = m_Camera.Position;
+REAL d = m_Camera.Focale;
+
+REAL P1x = P0.x - d * tan(thetaX);
+REAL P2x = P0.x + d * tan(thetaX);
+
+REAL P1y = P0.y - d * tan(thetaY);
+REAL P2y = P0.y + d * tan(thetaY);
+
+// POUR chaque position Py de pixel de la grille virtuelle
+for (unsigned int j = 0; j < m_ResHauteur; j++)
+{
+	// POUR chaque position Px de pixel de la grille virtuelle
+	for (unsigned int i = 0; i < m_ResLargeur; i++)
+	{
+		// Ajuster l’origine du rayon au centre de la caméra
+		rayon.AjusterOrigine(m_Camera.Position);
+
+		// Calculer la direction du rayon vers la coordonnée réelle du pixel ( Px,Py )
+		REAL Px = P1x + ((i + 0.5) / m_ResLargeur) * (P2x - P1x);
+		REAL Py = P1y + ((j + 0.5) / m_ResHauteur) * (P2y - P1y);
+
+		// Instanciation du vecteur résultant
+		CVecteur3 V(Px, Py, d);
+		V -= m_Camera.Position;
+
+		// Ajuster l'orientation du rayon ( utiliser la matrice Orientation de la camera qui est déjà calculé pour vous ) et le normaliser
+		rayon.AjusterDirection(CVecteur3::Normaliser(V * m_Camera.Orientation));
+
+		// Initialiser les autres caractéristiques du rayon à :
+		//      - Energie            = 1
+		//      - NbRebonds          = 0
+		//      - IndiceDeRefraction = 1
+		rayon.AjusterEnergie(1);
+		rayon.AjusterNbRebonds(0);
+		rayon.AjusterIndiceRefraction(1);
+
+		// Lancer le rayon pour obtenir la couleur du pixel avec la fonction
+		CCouleur couleur = CScene::ObtenirCouleur(rayon);
+
+		// Enregistrer les composantes R, G et B de la couleur du pixel dans la
+		//   structure linéaire m_PixelInfo de taille ResolutionX * ResolutionY * 3
+		unsigned int index = 3 * (i + j * m_ResLargeur);
+		m_InfoPixel[index + 0] = couleur.r;
+		m_InfoPixel[index + 1] = couleur.g;
+		m_InfoPixel[index + 2] = couleur.b;
+	}
+}
+
+// Créer une texture openGL
+glGenTextures(1, &m_TextureScene);
+glBindTexture(GL_TEXTURE_2D, m_TextureScene);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_ResLargeur, m_ResHauteur, 0, GL_RGB, GL_FLOAT, m_InfoPixel);
 
 }
 
