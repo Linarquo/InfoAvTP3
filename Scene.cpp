@@ -744,10 +744,10 @@ REAL P1y = P0.y - d * tan(thetaY);
 REAL P2y = P0.y + d * tan(thetaY);
 
 // POUR chaque position Py de pixel de la grille virtuelle
-for (unsigned int j = 0; j < m_ResHauteur; j++)
+for (int j = 0; j < m_ResHauteur; j++)
 {
 	// POUR chaque position Px de pixel de la grille virtuelle
-	for (unsigned int i = 0; i < m_ResLargeur; i++)
+	for (int i = 0; i < m_ResLargeur; i++)
 	{
 		// Ajuster l’origine du rayon au centre de la caméra
 		rayon.AjusterOrigine(m_Camera.Position);
@@ -881,13 +881,13 @@ const CCouleur CScene::ObtenirCouleurSurIntersection( const CRayon& Rayon, const
 		CRayon ReflectedRayon;
 		// À COMPLÉTER
 		//Ajuster la direction du rayon réfracté
-		//ReflectedRayon.AjusterDirection( ... );
+		ReflectedRayon.AjusterDirection( CVecteur3::Reflect(Rayon.ObtenirDirection(),Intersection.ObtenirNormale()));
 		ReflectedRayon.AjusterOrigine( IntersectionPoint );
 		ReflectedRayon.AjusterEnergie( ReflectedRayonEnergy );
 		ReflectedRayon.AjusterNbRebonds( Rayon.ObtenirNbRebonds() + 1 );
 		
 		//À decommenter apres ajustement de la direction!
-		//Result += ObtenirCouleur( ReflectedRayon ) * Intersection.ObtenirSurface()->ObtenirCoeffReflexion();
+		Result += ObtenirCouleur( ReflectedRayon ) * Intersection.ObtenirSurface()->ObtenirCoeffReflexion();
 	}
 
 	// Effectuer les réfractions de rayon
@@ -918,10 +918,10 @@ const CCouleur CScene::ObtenirCouleurSurIntersection( const CRayon& Rayon, const
 		RefractedRayon.AjusterNbRebonds( Rayon.ObtenirNbRebonds() + 1 );
 		// À COMPLÉTER
 		//Ajuster la direction du rayon réfracté
-		// ...
+		RefractedRayon.AjusterDirection(CVecteur3::Refract(Rayon.ObtenirDirection(), SurfaceNormal, IndiceRefractionRatio));
 
 		//A decommenter apres ajustement de la direction!
-		//Result += ObtenirCouleur( RefractedRayon ) * Intersection.ObtenirSurface()->ObtenirCoeffRefraction();
+		Result += ObtenirCouleur( RefractedRayon ) * Intersection.ObtenirSurface()->ObtenirCoeffRefraction();
 	}
 
 	return Result;
@@ -954,8 +954,22 @@ const CCouleur CScene::ObtenirFiltreDeSurface( CRayon& LumiereRayon ) const
 	// Tester le rayon de lumière avec chaque surface de la scène
 	// pour vérifier s'il y a intersection
 
+	CIntersection Result;
+	CIntersection Tmp;
+
+	for (SurfaceIterator it = m_Surfaces.begin(); it != m_Surfaces.end(); ++it) {
+		Tmp = (*it)->Intersection(LumiereRayon);
+		if (Tmp.ObtenirDistance() > EPSILON)
+			Result = Tmp;
+
 	// S'il y a une intersection appliquer la translucidité de la surface
 	// intersectée sur le filtre
 
+		if (Result.ObtenirSurface() != NULL) {
+			REAL coefTranslucide = Result.ObtenirSurface()->ObtenirCoeffRefraction();
+			CCouleur coulObjet = Result.ObtenirSurface()->ObtenirCouleur();
+			Filter *= coulObjet*coefTranslucide;
+		}
+	}
 	return Filter;
 }
