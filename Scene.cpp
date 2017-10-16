@@ -731,17 +731,16 @@ Initialiser();
 CRayon rayon;
 
 // Calcul des constantes utiles au calcul de la coordonnée du pixel
-REAL thetaY = m_Camera.Angle / 2.0;
+REAL thetaY = Deg2Rad(m_Camera.Angle / 2.0f);
 REAL thetaX = atan((m_ResLargeur / m_ResHauteur) * tan(thetaY));
 
-CVecteur3 P0 = m_Camera.Position;
-REAL d = m_Camera.Focale;
+REAL d = 1.0f;
 
-REAL P1x = P0.x - d * tan(thetaX);
-REAL P2x = P0.x + d * tan(thetaX);
+REAL P1x = - d * tan(thetaX);
+REAL P2x = d * tan(thetaX);
 
-REAL P1y = P0.y - d * tan(thetaY);
-REAL P2y = P0.y + d * tan(thetaY);
+REAL P1y = - d * tan(thetaY);
+REAL P2y = d * tan(thetaY);
 
 // POUR chaque position Py de pixel de la grille virtuelle
 for (int j = 0; j < m_ResHauteur; j++)
@@ -757,8 +756,7 @@ for (int j = 0; j < m_ResHauteur; j++)
 		REAL Py = P1y + ((j + 0.5) / m_ResHauteur) * (P2y - P1y);
 
 		// Instanciation du vecteur résultant
-		CVecteur3 V(Px, Py, d);
-		V -= m_Camera.Position;
+		CVecteur3 V(Px, Py, -d);
 
 		// Ajuster l'orientation du rayon ( utiliser la matrice Orientation de la camera qui est déjà calculé pour vous ) et le normaliser
 		rayon.AjusterDirection(CVecteur3::Normaliser(V * m_Camera.Orientation));
